@@ -102,11 +102,28 @@ void parseCommand(int argc, char **argv){
 
 
         if((strcmp("-r", argv[i]) == 0)) { //change to strcmp later
-            if(i == argc-1){
+            if(i == argc-1){ //check if -r is the last in the string
 				printf("\nerror usage\n");
+				free(command);
 				exit(1);
 			}
-			printf("/m type of arg counter is is %s", argv[i+1]);
+			
+			if(atoi(argv[i+1]) < 1) { // check if atoi had faild
+				printf("\nerror usage\n");
+				free(command);
+				exit(1);
+			}
+			
+			else { //the arg counter is ok
+				command->arg_count = atoi(argv[i+1]); //save the atoi counter
+				
+				printf("\nargv[i+1] is: %d\n", command->arg_count);
+				printf("\nargv[i+1] is: %s\n", argv[i+1]);
+				printf("\n[i+1] is: %d\n", (i+1));
+				printf("\nargc %d\n", argc);
+				break;
+				free(command);
+			}
 			
         }
 
