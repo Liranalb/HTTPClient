@@ -5,6 +5,8 @@
 #include <ctype.h>
 
 #define DEFAULT_PORT 80
+#define SPACE ' '
+#define EQUAL '='
 #define USAGE_ERR "Usage: client [-p <text>] [-r n < pr1=value1 pr2=value2 ...>] <URL>"
 
 //---------Struct for storing the command arguments ---------
@@ -19,20 +21,48 @@ typedef struct{ // CHECK ABOUT ERRORS WHEN CHANGING THE LINES
 }command_t;
 //------------------------------------------------------------
 
-int request(command_t **cmd, char **argv, int argc, int *i); //EDIT
+//int request(command_t **cmd, char **argv, int argc, int *i); //EDIT
 
 int request(command_t **cmd, char **argv, int argc, int *i){ //in case there is -r
 	int count = 0;
-	arguCount = (*cmd)->arg_count);
-	for(; *i < (arguCount+(*i)); i++){
+	int argCount = (*cmd)->arg_count;
+	int equalFlag = 0; 
+	
+	for(; *i < (argCount+(*i)); i++){ // this loop continue the loop from parseCommand method.
+		char* current = argv[(*i)];
+		if(strlen(current) < 3) // check if the string has a minimum of 3 chars "a=v"
+			return -1;
 		
-		printf("check");
+		if(current[0] == '=' || current[strlen(current)-1] == '=') //checking if the equal sign is in the wrong place
+			return -1; //the = is on the first or last argument. usage error
+		if(strchr(current,SPACE) != NULL)
+			return -1;
+		if(strlen(current) == 3) { //check in case the string length is 3
+			if(strcmp(&current[1] , "=") == 0)
+				return *i;
+			return -1;
+		}
 		
+		int j = 1;
+		while(j<(strlen(current)-2)){ //the string is longer then 3, with no space and no "=" on the first and last char
+			if(strcmp(&current[j] , "=") == 0){ //check and count the spaces in the middle
+				equalFlag++;
+				if(equalFlag > 1) //the is to many spaces
+					return -1;
+			}	
+			j++;
+		}
+		
+		if(equalFlag == 0)
+			return -1;
 		count++;
 	}
-	if(count == arguCount)
+	
+	if(count == argCount)
 		return *i;
 	return -1;
+	
+	//if((strcmp("-r", argv[i]) == 0))
 }
 //int urlOrganizer(command_t **cmd){
 
