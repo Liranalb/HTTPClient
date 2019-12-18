@@ -24,12 +24,20 @@ typedef struct{ // CHECK ABOUT ERRORS WHEN CHANGING THE LINES
 //int request(command_t **cmd, char **argv, int argc, int *i); //EDIT
 
 int request(command_t **cmd, char **argv, int argc, int *i){ //in case there is -r
+	*i = *i + 2; // add a check for the string length
 	int count = 0;
 	int argCount = (*cmd)->arg_count;
 	int equalFlag = 0; 
+	//printf("\n# Start REQUEST. i = %d\n", *i);
+	//printf("# argCount+(*i) = %d\n", (argCount+(*i)));
+	int argcT = argCount+(*i);
 	
-	for(; *i < (argCount+(*i)); i++){ // this loop continue the loop from parseCommand method.
+	for(; (*i) < argcT; (*i)++){ // this loop continue the loop from parseCommand method.	
+		//printf("\ni is: %d\n", (*i));
 		char* current = argv[(*i)];
+		//printf("\nCurrent is: %s\n", current);
+		//printf("\nstrlen(current) is: %ld\n", strlen(current));
+		
 		if(strlen(current) < 3) // check if the string has a minimum of 3 chars "a=v"
 			return -1;
 		
@@ -37,30 +45,35 @@ int request(command_t **cmd, char **argv, int argc, int *i){ //in case there is 
 			return -1; //the = is on the first or last argument. usage error
 		if(strchr(current,SPACE) != NULL)
 			return -1;
-		if(strlen(current) == 3) { //check in case the string length is 3
-			if(strcmp(&current[1] , "=") == 0)
-				return *i;
-			return -1;
-		}
 		
 		int j = 1;
-		while(j<(strlen(current)-2)){ //the string is longer then 3, with no space and no "=" on the first and last char
-			if(strcmp(&current[j] , "=") == 0){ //check and count the spaces in the middle
+		while(j<(strlen(current))-1){ //the string is longer then 3, with no space and no "=" on the first and last char
+			//printf("\ntest %d\n", j);
+			char tmp = current[j];
+			//printf("\n current char is %c", tmp);
+			if(tmp == '='){ //check and count the spaces in the middle
+				//printf("\n equal has been found\n");
 				equalFlag++;
 				if(equalFlag > 1) //the is to many spaces
 					return -1;
 			}	
 			j++;
+			//printf("\n test");
 		}
 		
+		//printf("\n equalFlag is %d\n", equalFlag);
 		if(equalFlag == 0)
 			return -1;
+		equalFlag =0;
 		count++;
+		
 	}
 	
+	//printf("\n test");
 	if(count == argCount)
-		return *i;
+		return (*i)-1;
 	return -1;
+	
 	
 	//if((strcmp("-r", argv[i]) == 0))
 }
@@ -117,6 +130,7 @@ void parseCommand(int argc, char **argv){ //change it to return the struct
 
     int i;
     for(i = 1 ; i < argc ; i++){ //going over argv
+		
 		if((strcmp("-p", argv[i]) == 0)) {
             if(i == argc-1){ //-p is last on the command. not text after it
 				printf(USAGE_ERR);
@@ -145,15 +159,7 @@ void parseCommand(int argc, char **argv){ //change it to return the struct
 			continue; //done cuting the url
 			
         }
-
-		//	else { //CHECK THIS CONDITION = URL NOT FOUND
-		//		if(i >= argc) { //if reached the end of argv
-		//			printf(USAGE_ERR);
-		//			free(command);
-		//			exit(1);
-		//		}
-		//	}
-
+		
         if((strcmp("-r", argv[i]) == 0)) { 
 			if(i == argc-1){ //check if -r is the last in the string or atoi faild
 				printf(USAGE_ERR);
@@ -173,11 +179,22 @@ void parseCommand(int argc, char **argv){ //change it to return the struct
 				exit(1);
 			}
 			
-			 //the arg counter is ok
-			command->arg_count = atoi(argv[i+1]); //save the atoi counter
 			
-			///////CHECK ARGUMENT HERE
-			//request(&command , argv[i], argc, &i);
+			//the arg counter is ok
+			//printf("\n i before request is: %d\n", i);
+			
+			command->arg_count = atoi(argv[i+1]); //save the atoi counter
+			int tmp = request(&(command), argv, argc, &i);
+			if(tmp == -1){
+                printf(USAGE_ERR);
+                free(command);
+                exit(1);
+            }
+            
+            i = tmp;
+            printf("\n modified i is: %d", tmp);
+			//request(command_t **cmd, char **argv, int argc, &i);
+			
 				
 			//printf("\nargv[i+1] is: %d\n", command->arg_count);
 			//printf("\nargv[i+1] is: %s\n", argv[i+1]);
