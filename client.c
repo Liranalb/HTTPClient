@@ -24,13 +24,15 @@ typedef struct{ // CHECK ABOUT ERRORS WHEN CHANGING THE LINES
     char* text;
     char* argu;
     char* path;
+    char* strRequest;
+    
 
     
 }command_t;
 //------------------------------------------------------------
 
 //int request(command_t **cmd, char **argv, int argc, int *i); //EDIT
-
+void reqBuilder(command_t **cmd);
 
 
 int request(command_t **cmd, char **argv, int argc, int *i){ //in case there is -r
@@ -234,21 +236,10 @@ command_t cmdCutter(int argc, char **argv){ //change it to return the struct
 
     }
     
-
-
+	
+	reqBuilder(&command);
  
- /*  
-	int reqlength = 4; //length of get + space
-	if(command->post == 1) // post + space
-		reqlength++;
-	
-	
-    char* req = (*char)malloc(sizeof(char)
-    if(command->post == 1)
-		strcat(req, "POST ");
-	strcat(req, "GET ");
-	strcat(req, command->path);
-   */
+
    
     
     //printf("\n req in: %s", req);
@@ -258,6 +249,47 @@ command_t cmdCutter(int argc, char **argv){ //change it to return the struct
     //free(command);
     return *command;
 }
+
+void reqBuilder(command_t **cmd) {
+	char tmp[256];
+	if((*cmd)->post == 0)
+		strcpy(tmp, "GET ");
+	printf("\nThe temp req is %s\n", tmp);
+	strcat(tmp, (*cmd)->path);
+	printf("\nThe temp req is %s\n", tmp);
+	if(((*cmd)->argu)){
+		strcat(tmp, (*cmd)->argu);
+		free(((*cmd)->argu));
+	}
+	printf("\nThe temp req is %s\n", tmp);
+	strcat(tmp, " ");
+	strcat(tmp, PROTOCOL);
+	printf("\nThe temp req is %s\n", tmp);
+	strcat(tmp, "\r\nHOST:");
+	strcat(tmp, (*cmd)->host);
+	strcat(tmp, "\r\n\r\n");
+	printf("\nThe temp req is %s\n", tmp);
+}
+
+/*
+void reqBuilder(command_t **cmd) {
+	char tmp[256];
+	if((*cmd)->post == 0)
+		strcpy(tmp, "GET ");
+	printf("\nThe temp req is %s\n", tmp);
+	strcat(tmp, (*cmd)->path);
+	printf("\nThe temp req is %s\n", tmp);
+	if(((*cmd)->argu)){
+		strcat(tmp, (*cmd)->argu);
+		free(((*cmd)->argu));
+	}
+	printf("\nThe temp req is %s\n", tmp);
+	strcat(tmp, " ");
+	strcat(tmp, PROTOCOL);
+	printf("\nThe temp req is %s\n", tmp);
+}
+* 
+* */
 
 
 
@@ -338,6 +370,9 @@ int main(int argc,char *argv[]) {
 
 	
 	close(sockfd);
+	
+	
+	
 	free(command.text);
 	free(command.argu);
     //free(command);
