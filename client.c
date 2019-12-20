@@ -21,9 +21,10 @@ typedef struct{ // CHECK ABOUT ERRORS WHEN CHANGING THE LINES
     int post;
     int arg_count;
     char* host; // "www...."
+    char* text;
     char* argu;
     char* path;
-    char* text;
+
     
 }command_t;
 //------------------------------------------------------------
@@ -278,7 +279,10 @@ int main(int argc,char *argv[]) {
     printf("The Path is: %s\n", command.path);
     printf("The port is: %d\n", command.port);
     printf("The arg's are: %s\n", command.argu);
-    printf("The post text is %s", command.text);
+    printf("The post text is %s\n", command.text);
+    printf("The post text is %s\n", command.text);
+    printf("The post text is %s\n", command.text);
+    printf("The post text is %s\n", command.text);
 
     int sockfd; //return file descriptor when succeed;
     //int n;
@@ -287,23 +291,29 @@ int main(int argc,char *argv[]) {
     
     struct sockaddr_in serv_addr;
     struct  hostent *server;
-    char buffer[BUFLEN],rbuf[BUFLEN];
-	
+    //char buffer[BUFLEN],
+    char rbuf[256];
+    char* buffer = "GET /t/ex2?add=jerusalem&tel=02-6655443&age=23 HTTP/1.0\nHost:www.ptsv2.com\r\n\r\n";
     
+	//"./%e" -r 3 addr=jecrusalem tel=02-6655443 age=23 http://www.ptsv2.com/t/ex2
     if(argc < 3){
 		printf(USAGE_ERR);
 		exit(0);
     }
     
+    //server = gethostbyname(command.host);
+    //printf("\nServer name is: %s" ,server->h_name);
     
-    sockfd = socket(AF_INET, SOCK_STREAM,0); //create an endpoint for communication
-    printf("\test\n");
+    sockfd = socket( AF_INET, SOCK_STREAM , 0); //create an endpoint for communication
+    
+    
+    
     if(sockfd < 0){ //checking id succeed
 		printf("error opening socket");
 		exit(0);
 	}
 	
-	
+	//printf("\n server name is: %s" ,server->h_name);
 	server = gethostbyname(command.host);
     
 	if(!server){
@@ -312,19 +322,21 @@ int main(int argc,char *argv[]) {
 	}
 		
     serv_addr.sin_family = AF_INET;
-	bcopy((char *)server->h_addr_list, (char *) &serv_addr.sin_addr.s_addr, server->h_length);
+	bcopy((char *)server->h_addr, (char *) &serv_addr.sin_addr.s_addr, server->h_length);
 	serv_addr.sin_port = htons(command.port);
 
 	//initiate connection on a socket
 	if(connect(sockfd, (const struct sockaddr*)&serv_addr, sizeof(serv_addr)) < 0) //initiate connection on a socket
 	    perror("ERROR connecting");
 
-	while(1){
+	
 	    rc = write(sockfd, buffer, strlen(buffer)+1);
-	    rc = read(sockfd, rbuf, BUFLEN+1);
-	    printf("print  %s", rbuf);
+	    if(rc == 0)
+			exit(0);
+	    rc = read(sockfd, rbuf, 1000);
+	    printf("%s", rbuf);
 
-	}
+	
 	close(sockfd);
 	free(command.text);
 	free(command.argu);
