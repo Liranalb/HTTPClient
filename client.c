@@ -15,6 +15,7 @@ typedef struct{ // CHECK ABOUT ERRORS WHEN CHANGING THE LINES
     int get;
     int arg_count;
     char* host; // "www...."
+    char* argu;
     char* path;
     char* text;
     
@@ -33,36 +34,29 @@ int request(command_t **cmd, char **argv, int argc, int *i){ //in case there is 
 	//printf("# argCount+(*i) = %d\n", (argCount+(*i)));
 	int argcT = argCount+(*i);
 	int lengthCounter = (*cmd)->arg_count; //will save the length of all of the argument
-	//*ptr = (int *)malloc(sizeof(int)*2); 
+
 	
 	
 	for(; (*i) < argcT; (*i)++){ // this loop continue the loop from parseCommand method.	
 		char* current = argv[(*i)];
 
-		if(strlen(current) < 3){ // check if the string has a minimum of 3 chars "a=v"
-			//free((*cmd)->text);
+		if(strlen(current) < 3)// check if the string has a minimum of 3 chars "a=v"
 			return -1;
-		}
 		
-		if(current[0] == '=' || current[strlen(current)-1] == '='){ //checking if the equal sign is in the wrong place
-			//free((*cmd)->text);
+		
+		if(current[0] == '=' || current[strlen(current)-1] == '=') //checking if the equal sign is in the wrong place
 			return -1; //the = is on the first or last argument. usage error
-	}
-		if(strchr(current,SPACE) != NULL){
-			//free((*cmd)->text);
+	
+		if(strchr(current,SPACE) != NULL)
 			return -1;
-		}
+		
 		
 		int j = 1;
 		while(j<(strlen(current))-1){ //the string is longer then 3, with no space and no "=" on the first and last char
-			//printf("\ntest %d\n", j);
 			char tmp = current[j];
-			//printf("\n current char is %c", tmp);
 			if(tmp == '='){ //check and count the spaces in the middle
-				//printf("\n equal has been found\n");
 				equalFlag++;
 				if(equalFlag > 1) {//the is to many spaces
-					//free((*cmd)->text);
 					return -1;
 					
 				}
@@ -73,10 +67,7 @@ int request(command_t **cmd, char **argv, int argc, int *i){ //in case there is 
 		}
 		
 		lengthCounter+=strlen(current);
-		
-		//printf("\n equalFlag is %d\n", equalFlag);
 		if(equalFlag == 0){
-			//free((*cmd)->text);
 			return -1;
 		}
 		
@@ -96,46 +87,41 @@ int request(command_t **cmd, char **argv, int argc, int *i){ //in case there is 
 	
 	printf("\nThe temp text is %s\n", tmpText);
 	
-	((*cmd)->text) = (char*)malloc(sizeof(char)*strlen(tmpText));
-	strcpy(((*cmd)->text), tmpText);
+	((*cmd)->argu) = (char*)malloc(sizeof(char)*strlen(tmpText));
+	    if(!((*cmd)->argu)) {
+        printf("Cannot allocate initial memory for data\n");
+        return -1;
+    }
 	
-	printf("\nThe struct text is %s\n", (*cmd)->text);
-	//
+	strcpy(((*cmd)->argu), tmpText);
 	
+	printf("\nThe struct text is %s\n", (*cmd)->argu);
 
-	//message = strcat("TEXT ", var);
-	//printf("\n test");
 	if(count == argCount){
 		(*i)=(*i)-1;
 		return (*i);
 		}
 	
 	else{
-		free((*cmd)->text);
+		free((*cmd)->argu);
 		return -1;
 	}	
 	
-	//if((strcmp("-r", argv[i]) == 0))
+
 }
-//int urlOrganizer(command_t **cmd){
+
 
 int urlOrganizer(char *url, command_t **cmd){
     printf("\n Full temp-URL: %s\n", url);
     const char portMarker = ':';
-    //add http:// checker/ check if it's the right place for it
     if(strchr(url+7, portMarker) == NULL) { //if we didn't find the marker ':', set the port to 80
         char *urlTmp = strtok(url, "/");
         urlTmp = strtok(NULL, "/");
-        //printf("\n Host temp is: %s", urlTmp);
         (*cmd)->host = urlTmp;
-        //printf("\n Host at struct is: %s", (*cmd)->host);
         urlTmp = strtok(NULL, "");
-
-        //printf("\n path in temp is: %s", urlTmp);
         (*cmd)->path = urlTmp;
-        //printf("\n path in struct is: %s", (*cmd)->path);
         (*cmd)->port = 80;
-        //printf("\n port in struct is: %d", (*cmd)->port);
+
 
     }
 
@@ -144,8 +130,6 @@ int urlOrganizer(char *url, command_t **cmd){
         urlTmp = strtok(NULL, "/");
 
         (*cmd)->path = strtok(NULL, ":");
-        //printf("\n Host temp is: %s", urlTmp);
-        //printf("\n path in struct is: %s", (*cmd)->path);
         (*cmd)->host = strtok(urlTmp, ":/");
         urlTmp = strtok(NULL, ":/"); //port
         (*cmd)->port = atoi(urlTmp);
@@ -179,18 +163,20 @@ void parseCommand(int argc, char **argv){ //change it to return the struct
 			}
             
             command->post = 1; //turn on post flag
-            //printf("The post value is: %d", command->post);
-            //printf("\n arg[i+1] is: %s\n", argv[i+1]);
-            command->text = argv[i+1]; //save the text for post later
-            //printf("\n struct text is: %s\n", command->text);
+            command->text = (char*)malloc(sizeof(char)*strlen(argv[i+1])); //save the text for post later
+			if(!command->text) {
+				printf("Cannot allocate initial memory for data\n");
+				free(command);
+				exit(1);
+			}
+			
+            strcpy(command->text, argv[i+1]);
+            //printf("\n The p text is %s", command->text);
             i++; //skip the text for the next checks
             continue;
         }
         
-        //       printf("\n #arv[%d] is: %s\n", i,  argv[i]);
         if((strncmp("http://", argv[i], 7) == 0)) { //if the first seven chars of the current string is http://
-            //printf("\n #http is: %s\n",  argv[i]);
-            //printf("\n #cut http: %s\n",  argv[i]+7);
             if(urlOrganizer(argv[i], &(command)) == -1){ //sent the address for proccesing
                 printf(USAGE_ERR);
                 free(command);
@@ -218,32 +204,16 @@ void parseCommand(int argc, char **argv){ //change it to return the struct
 				free(command);
 				exit(1);
 			}
-			
-			
-			//the arg counter is ok
-			//printf("\n i before request is: %d\n", i);
-			
+						
 			command->arg_count = atoi(argv[i+1]); //save the atoi counter
-			//int tmp = (request((&command), argv, argc, &i));
+			
 			if((request((&command), argv, argc, &i)) == -1){
                 printf(USAGE_ERR);
                 free(command);
                 exit(1);
             }
             command->get = 1;
-            
-            //printf("\n modified i is: %d", i);
-            //printf("\n modified i is: %d", tmp);
-            
- 
-            //printf("\n modified i is: %d", tmp);
-			//request(command_t **cmd, char **argv, int argc, &i);
-			
-				
-			//printf("\nargv[i+1] is: %d\n", command->arg_count);
-			//printf("\nargv[i+1] is: %s\n", argv[i+1]);
-			//printf("\n[i+1] is: %d\n", (i+1));
-			//printf("\nargc %d\n", argc);
+\
 			continue;	
 			
 			
@@ -261,10 +231,12 @@ void parseCommand(int argc, char **argv){ //change it to return the struct
     printf("The host is: %s\n", command->host);
     printf("The Path is: %s\n", command->path);
     printf("The port is: %d\n", command->port);
-    printf("The arg's are %s\n", command->text);
+    printf("The arg's are: %s\n", command->argu);
+    printf("The post text is %s", command->text);
    
 	//free(command->text);
 	free(command->text);
+	free(command->argu);
     free(command);
 }
 
