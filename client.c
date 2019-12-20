@@ -1,18 +1,24 @@
 #include <stdio.h>
+#include <sys/types.h>
+#include <sys/socket.h>
+#include <netinet/in.h>
+#include <unistd.h>
 #include <string.h>
 #include <stdlib.h> 
 #include <ctype.h>
+#include <netdb.h>
 
 #define DEFAULT_PORT 80
 #define SPACE ' '
 #define EQUAL '='
 #define USAGE_ERR "Usage: client [-p <text>] [-r n < pr1=value1 pr2=value2 ...>] <URL>"
+#define PROTOCOL "HTTP/1.0"
+#define BUFLEN 10
 
 //---------Struct for storing the command arguments ---------
 typedef struct{ // CHECK ABOUT ERRORS WHEN CHANGING THE LINES
     int port;
     int post;
-    int get;
     int arg_count;
     char* host; // "www...."
     char* argu;
@@ -23,6 +29,8 @@ typedef struct{ // CHECK ABOUT ERRORS WHEN CHANGING THE LINES
 //------------------------------------------------------------
 
 //int request(command_t **cmd, char **argv, int argc, int *i); //EDIT
+
+
 
 int request(command_t **cmd, char **argv, int argc, int *i){ //in case there is -r
 	*i = *i + 2; // add a check for the string length
@@ -37,7 +45,7 @@ int request(command_t **cmd, char **argv, int argc, int *i){ //in case there is 
 
 	
 	
-	for(; (*i) < argcT; (*i)++){ // this loop continue the loop from parseCommand method.	
+	for(; (*i) < argcT; (*i)++){ // this loop continue the loop from cmdCutter method.
 		char* current = argv[(*i)];
 
 		if(strlen(current) < 3)// check if the string has a minimum of 3 chars "a=v"
@@ -145,7 +153,7 @@ int urlOrganizer(char *url, command_t **cmd){
 };
 
 
-void parseCommand(int argc, char **argv){ //change it to return the struct
+command_t cmdCutter(int argc, char **argv){ //change it to return the struct
     command_t *command = (command_t*)malloc(sizeof(command_t)); //will be use to store the command data and arguments
     if(!command){
         printf("cannot allocate initiate memory for command\n");
@@ -194,7 +202,7 @@ void parseCommand(int argc, char **argv){ //change it to return the struct
 			}
 			
 			if((strcmp("0", argv[i+1]) == 0)){ //if the is no argument. do get anyway ####CHECK
-				command->get = 1;
+				command->post = 0;
 				i++;
 				continue;
 			}
@@ -212,7 +220,7 @@ void parseCommand(int argc, char **argv){ //change it to return the struct
                 free(command);
                 exit(1);
             }
-            command->get = 1;
+            command->post = 0;
 \
 			continue;	
 			
@@ -225,20 +233,32 @@ void parseCommand(int argc, char **argv){ //change it to return the struct
 
     }
     
-    printf("********************************\n");
-    printf("*** Struct Checker From Main ***\n");
-    printf("********************************\n");
-    printf("The host is: %s\n", command->host);
-    printf("The Path is: %s\n", command->path);
-    printf("The port is: %d\n", command->port);
-    printf("The arg's are: %s\n", command->argu);
-    printf("The post text is %s", command->text);
+
+
+ 
+ /*  
+	int reqlength = 4; //length of get + space
+	if(command->post == 1) // post + space
+		reqlength++;
+	
+	
+    char* req = (*char)malloc(sizeof(char)
+    if(command->post == 1)
+		strcat(req, "POST ");
+	strcat(req, "GET ");
+	strcat(req, command->path);
+   */
    
+    
+    //printf("\n req in: %s", req);
 	//free(command->text);
-	free(command->text);
-	free(command->argu);
-    free(command);
+	//free(command->text);
+	//free(command->argu);
+    //free(command);
+    return *command;
 }
+
+
 
 int main(int argc,char *argv[]) {
 /*-------------------print argc and argv-----------------
@@ -248,7 +268,68 @@ int main(int argc,char *argv[]) {
         printf("%s\n" ,argv[i]);
     }
 */
+	/////// RETURN THE STRUCTURE AFTER PROCCESING
+    command_t command = cmdCutter(argc, argv);
+
+    printf("********************************\n");
+    printf("*** Struct Checker From Main ***\n");
+    printf("********************************\n");
+    printf("The host is: %s\n", command.host);
+    printf("The Path is: %s\n", command.path);
+    printf("The port is: %d\n", command.port);
+    printf("The arg's are: %s\n", command.argu);
+    printf("The post text is %s", command.text);
+
+    int sockfd; //return file descriptor when succeed;
+    //int n;
+    //int num;
+    int rc;
+    
+    struct sockaddr_in serv_addr;
+    struct  hostent *server;
+    char buffer[BUFLEN],rbuf[BUFLEN];
 	
-    parseCommand(argc, argv);
+    
+    if(argc < 3){
+		printf(USAGE_ERR);
+		exit(0);
+    }
+    
+    
+    sockfd = socket(AF_INET, SOCK_STREAM,0); //create an endpoint for communication
+    printf("\test\n");
+    if(sockfd < 0){ //checking id succeed
+		printf("error opening socket");
+		exit(0);
+	}
+	
+	
+	server = gethostbyname(command.host);
+    
+	if(!server){
+		fprintf(stderr, "ERROR, no such host\n");
+		exit(0);
+	}
+		
+    serv_addr.sin_family = AF_INET;
+	bcopy((char *)server->h_addr_list, (char *) &serv_addr.sin_addr.s_addr, server->h_length);
+	serv_addr.sin_port = htons(command.port);
+
+	//initiate connection on a socket
+	if(connect(sockfd, (const struct sockaddr*)&serv_addr, sizeof(serv_addr)) < 0) //initiate connection on a socket
+	    perror("ERROR connecting");
+
+	while(1){
+	    rc = write(sockfd, buffer, strlen(buffer)+1);
+	    rc = read(sockfd, rbuf, BUFLEN+1);
+	    printf("print  %s", rbuf);
+
+	}
+	close(sockfd);
+	free(command.text);
+	free(command.argu);
+    //free(command);
+
+	
     return 0;
 }
