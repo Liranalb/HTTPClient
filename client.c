@@ -1,7 +1,6 @@
 #include <stdio.h>
 #include <string.h>
-#include <stdlib.h> //check if needed
-//#include <getopt.h>
+#include <stdlib.h> 
 #include <ctype.h>
 
 #define DEFAULT_PORT 80
@@ -18,6 +17,7 @@ typedef struct{ // CHECK ABOUT ERRORS WHEN CHANGING THE LINES
     char* host; // "www...."
     char* path;
     char* text;
+    
 }command_t;
 //------------------------------------------------------------
 
@@ -25,26 +25,33 @@ typedef struct{ // CHECK ABOUT ERRORS WHEN CHANGING THE LINES
 
 int request(command_t **cmd, char **argv, int argc, int *i){ //in case there is -r
 	*i = *i + 2; // add a check for the string length
+	int stringC = *i; // for the secound loop
 	int count = 0;
 	int argCount = (*cmd)->arg_count;
 	int equalFlag = 0; 
 	//printf("\n# Start REQUEST. i = %d\n", *i);
 	//printf("# argCount+(*i) = %d\n", (argCount+(*i)));
 	int argcT = argCount+(*i);
+	int lengthCounter = (*cmd)->arg_count; //will save the length of all of the argument
+	//*ptr = (int *)malloc(sizeof(int)*2); 
+	
 	
 	for(; (*i) < argcT; (*i)++){ // this loop continue the loop from parseCommand method.	
-		//printf("\ni is: %d\n", (*i));
 		char* current = argv[(*i)];
-		//printf("\nCurrent is: %s\n", current);
-		//printf("\nstrlen(current) is: %ld\n", strlen(current));
-		
-		if(strlen(current) < 3) // check if the string has a minimum of 3 chars "a=v"
+
+		if(strlen(current) < 3){ // check if the string has a minimum of 3 chars "a=v"
+			//free((*cmd)->text);
 			return -1;
+		}
 		
-		if(current[0] == '=' || current[strlen(current)-1] == '=') //checking if the equal sign is in the wrong place
+		if(current[0] == '=' || current[strlen(current)-1] == '='){ //checking if the equal sign is in the wrong place
+			//free((*cmd)->text);
 			return -1; //the = is on the first or last argument. usage error
-		if(strchr(current,SPACE) != NULL)
+	}
+		if(strchr(current,SPACE) != NULL){
+			//free((*cmd)->text);
 			return -1;
+		}
 		
 		int j = 1;
 		while(j<(strlen(current))-1){ //the string is longer then 3, with no space and no "=" on the first and last char
@@ -54,26 +61,59 @@ int request(command_t **cmd, char **argv, int argc, int *i){ //in case there is 
 			if(tmp == '='){ //check and count the spaces in the middle
 				//printf("\n equal has been found\n");
 				equalFlag++;
-				if(equalFlag > 1) //the is to many spaces
+				if(equalFlag > 1) {//the is to many spaces
+					//free((*cmd)->text);
 					return -1;
+					
+				}
 			}	
+
 			j++;
 			//printf("\n test");
 		}
 		
-		//printf("\n equalFlag is %d\n", equalFlag);
-		if(equalFlag == 0)
-			return -1;
-		equalFlag =0;
-		count++;
+		lengthCounter+=strlen(current);
 		
+		//printf("\n equalFlag is %d\n", equalFlag);
+		if(equalFlag == 0){
+			//free((*cmd)->text);
+			return -1;
+		}
+		
+		equalFlag = 0;
+		count++;
+
 	}
 	
-	//printf("\n test");
-	if(count == argCount)
-		return (*i)-1;
-	return -1;
+	char tmpText[lengthCounter];
+	tmpText[0] = '?';
 	
+	for(; stringC < argcT; stringC++){ //after we checked the argument, entering them to the struct
+		strcat(tmpText, argv[stringC]);
+		if(stringC != argcT-1)
+			strcat(tmpText, "&");
+	}
+	
+	printf("\nThe temp text is %s\n", tmpText);
+	
+	((*cmd)->text) = (char*)malloc(sizeof(char)*strlen(tmpText));
+	strcpy(((*cmd)->text), tmpText);
+	
+	printf("\nThe struct text is %s\n", (*cmd)->text);
+	//
+	
+
+	//message = strcat("TEXT ", var);
+	//printf("\n test");
+	if(count == argCount){
+		(*i)=(*i)-1;
+		return (*i);
+		}
+	
+	else{
+		free((*cmd)->text);
+		return -1;
+	}	
 	
 	//if((strcmp("-r", argv[i]) == 0))
 }
@@ -184,15 +224,19 @@ void parseCommand(int argc, char **argv){ //change it to return the struct
 			//printf("\n i before request is: %d\n", i);
 			
 			command->arg_count = atoi(argv[i+1]); //save the atoi counter
-			int tmp = request(&(command), argv, argc, &i);
-			if(tmp == -1){
+			//int tmp = (request((&command), argv, argc, &i));
+			if((request((&command), argv, argc, &i)) == -1){
                 printf(USAGE_ERR);
                 free(command);
                 exit(1);
             }
+            command->get = 1;
             
-            i = tmp;
-            printf("\n modified i is: %d", tmp);
+            //printf("\n modified i is: %d", i);
+            //printf("\n modified i is: %d", tmp);
+            
+ 
+            //printf("\n modified i is: %d", tmp);
 			//request(command_t **cmd, char **argv, int argc, &i);
 			
 				
@@ -216,9 +260,11 @@ void parseCommand(int argc, char **argv){ //change it to return the struct
     printf("********************************\n");
     printf("The host is: %s\n", command->host);
     printf("The Path is: %s\n", command->path);
-    printf("The port is: %d", command->port);
+    printf("The port is: %d\n", command->port);
+    printf("The arg's are %s\n", command->text);
    
-
+	//free(command->text);
+	free(command->text);
     free(command);
 }
 
