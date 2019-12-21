@@ -26,14 +26,13 @@ typedef struct{ // CHECK ABOUT ERRORS WHEN CHANGING THE LINES
     char* path;
     char* strRequest;
     
-
-    
 }command_t;
 //------------------------------------------------------------
 
 //int request(command_t **cmd, char **argv, int argc, int *i); //EDIT
 void reqBuilder(command_t **cmd);
-
+void usageERR(command_t **cmd);
+void detor(command_t **cmd);
 
 int request(command_t **cmd, char **argv, int argc, int *i){ //in case there is -r
 	*i = *i + 2; // add a check for the string length
@@ -51,15 +50,20 @@ int request(command_t **cmd, char **argv, int argc, int *i){ //in case there is 
 	for(; (*i) < argcT; (*i)++){ // this loop continue the loop from cmdCutter method.
 		char* current = argv[(*i)];
 
-		if(strlen(current) < 3)// check if the string has a minimum of 3 chars "a=v"
+		if(strlen(current) < 3){// check if the string has a minimum of 3 chars "a=v"
+			detor(cmd);
 			return -1;
+		}
 		
-		
-		if(current[0] == '=' || current[strlen(current)-1] == '=') //checking if the equal sign is in the wrong place
+		if(current[0] == '=' || current[strlen(current)-1] == '='){ //checking if the equal sign is in the wrong place
+			detor(cmd);
 			return -1; //the = is on the first or last argument. usage error
-	
-		if(strchr(current,SPACE) != NULL)
+		}
+		
+		if(strchr(current,SPACE) != NULL){
+			detor(cmd);
 			return -1;
+		}
 		
 		
 		int j = 1;
@@ -68,8 +72,8 @@ int request(command_t **cmd, char **argv, int argc, int *i){ //in case there is 
 			if(tmp == '='){ //check and count the spaces in the middle
 				equalFlag++;
 				if(equalFlag > 1) {//the is to many spaces
+					detor(cmd);
 					return -1;
-					
 				}
 			}	
 
@@ -79,12 +83,12 @@ int request(command_t **cmd, char **argv, int argc, int *i){ //in case there is 
 		
 		lengthCounter+=strlen(current);
 		if(equalFlag == 0){
+			detor(cmd);
 			return -1;
 		}
 		
 		equalFlag = 0;
 		count++;
-
 	}
 	
 	char tmpText[lengthCounter];
@@ -96,11 +100,12 @@ int request(command_t **cmd, char **argv, int argc, int *i){ //in case there is 
 			strcat(tmpText, "&");
 	}
 	
-	printf("\nThe temp text is %s\n", tmpText);
+	//printf("\nThe temp text is %s\n", tmpText);
 	
 	((*cmd)->argu) = (char*)malloc(sizeof(char)*strlen(tmpText));
 	    if(!((*cmd)->argu)) {
         printf("Cannot allocate initial memory for data\n");
+        detor(cmd);
         return -1;
     }
 	
@@ -114,11 +119,9 @@ int request(command_t **cmd, char **argv, int argc, int *i){ //in case there is 
 		}
 	
 	else{
-		free((*cmd)->argu);
+		detor(cmd);
 		return -1;
 	}	
-	
-
 }
 
 
@@ -132,8 +135,6 @@ int urlOrganizer(char *url, command_t **cmd){
         urlTmp = strtok(NULL, "");
         (*cmd)->path = urlTmp;
         (*cmd)->port = 80;
-
-
     }
 
     else { //the is a port
@@ -145,13 +146,13 @@ int urlOrganizer(char *url, command_t **cmd){
         urlTmp = strtok(NULL, ":/"); //port
         (*cmd)->port = atoi(urlTmp);
         if(((*cmd)->port) < 0) { //the port is 0 or negative
+            detor(cmd);
             return -1;
         }
     }
-
+	printf("The Path is: %s\n", (*cmd)->path);
     if((*cmd)->path == NULL) // define the root as a path in case no path given
-        (*cmd)->path = (char *) '/'; //check if working
-
+        (*cmd)->path = "/"; //check if working
     return 0;
 };
 
@@ -160,16 +161,15 @@ command_t cmdCutter(int argc, char **argv){ //change it to return the struct
     command_t *command = (command_t*)malloc(sizeof(command_t)); //will be use to store the command data and arguments
     if(!command){
         printf("cannot allocate initiate memory for command\n");
+        detor(&command); //check
         exit(1); //check the exit code
     }
 
     int i;
-    for(i = 1 ; i < argc ; i++){ //going over argv
-		
+    for(i = 1 ; i < argc ; i++){ //going over argv	
 		if((strcmp("-p", argv[i]) == 0)) {
             if(i == argc-1){ //-p is last on the command. not text after it
-				printf(USAGE_ERR);
-				free(command);
+				usageERR(&command);
 				exit(1);
 			}
             
@@ -177,7 +177,7 @@ command_t cmdCutter(int argc, char **argv){ //change it to return the struct
             command->text = (char*)malloc(sizeof(char)*strlen(argv[i+1])); //save the text for post later
 			if(!command->text) {
 				printf("Cannot allocate initial memory for data\n");
-				free(command);
+				detor(&command);
 				exit(1);
 			}
 			
@@ -189,8 +189,7 @@ command_t cmdCutter(int argc, char **argv){ //change it to return the struct
         
         if((strncmp("http://", argv[i], 7) == 0)) { //if the first seven chars of the current string is http://
             if(urlOrganizer(argv[i], &(command)) == -1){ //sent the address for proccesing
-                printf(USAGE_ERR);
-                free(command);
+                usageERR(&command);
                 exit(1);
 			}
 			continue; //done cuting the url
@@ -199,8 +198,7 @@ command_t cmdCutter(int argc, char **argv){ //change it to return the struct
 		
         if((strcmp("-r", argv[i]) == 0)) { 
 			if(i == argc-1){ //check if -r is the last in the string or atoi faild
-				printf(USAGE_ERR);
-				free(command);
+				usageERR(&command);
 				exit(1);
 			}
 			
@@ -211,16 +209,14 @@ command_t cmdCutter(int argc, char **argv){ //change it to return the struct
 			}
 			
             if(atoi(argv[i+1]) < 1){ //check if atoi failed
-				printf(USAGE_ERR);
-				free(command);
+				usageERR(&command);
 				exit(1);
 			}
 						
 			command->arg_count = atoi(argv[i+1]); //save the atoi counter
 			
 			if((request((&command), argv, argc, &i)) == -1){
-                printf(USAGE_ERR);
-                free(command);
+                usageERR(&command);
                 exit(1);
             }
             command->post = 0;
@@ -230,45 +226,88 @@ command_t cmdCutter(int argc, char **argv){ //change it to return the struct
 			
         }
         //the current argv[i] doesn't contains "-p" "-r" "http://" or arguments. print usage error and exit
-		printf(USAGE_ERR);
-		free(command);
+		usageERR(&command);
 		exit(1);
 
     }
     
-	
 	reqBuilder(&command);
- 
-
-   
-    
-    //printf("\n req in: %s", req);
-	//free(command->text);
-	//free(command->text);
-	//free(command->argu);
-    //free(command);
     return *command;
 }
 
 void reqBuilder(command_t **cmd) {
+	
 	char tmp[256];
 	if((*cmd)->post == 0)
 		strcpy(tmp, "GET ");
+	else
+		strcpy(tmp, "POST ");
+	
 	printf("\nThe temp req is %s\n", tmp);
+	char * pat = (*cmd)->path;
+	
+	printf("The Path is: %s\n", (*cmd)->path);
+	
+	if(pat[0] != '/'){
+		strcat(tmp, "/");
+	}
+	
+	
 	strcat(tmp, (*cmd)->path);
-	printf("\nThe temp req is %s\n", tmp);
+	//printf("\nThe temp req is %s\n", tmp);
 	if(((*cmd)->argu)){
 		strcat(tmp, (*cmd)->argu);
 		free(((*cmd)->argu));
 	}
-	printf("\nThe temp req is %s\n", tmp);
+	//printf("\nThe temp req is %s\n", tmp);
 	strcat(tmp, " ");
 	strcat(tmp, PROTOCOL);
-	printf("\nThe temp req is %s\n", tmp);
+	//printf("\nThe temp req is %s\n", tmp);
 	strcat(tmp, "\r\nHOST:");
 	strcat(tmp, (*cmd)->host);
 	strcat(tmp, "\r\n\r\n");
 	printf("\nThe temp req is %s\n", tmp);
+	
+	
+	(*cmd)->strRequest = (char*)malloc(sizeof(char)*strlen(tmp));
+	if(!((*cmd)->strRequest)) {
+		printf("Cannot allocate initial memory for data\n");
+		detor(cmd);
+		exit(1);
+		}
+	
+	if((*cmd)->post != 0){
+		strcat(tmp, "\nContent-length:");
+		
+		
+		char buffer[256];
+		int value = strlen((*cmd)->text);
+		snprintf(buffer, 10, "%d", value);
+		
+		strcat(tmp, buffer);
+		//printf("\nThe temp req is:\n%s", tmp);
+		strcat(tmp, "\n\n");
+		strcat(tmp, (*cmd)->text);
+	}
+		
+	strcpy((*cmd)->strRequest, tmp);
+	
+}
+
+void usageERR(command_t **cmd){
+	printf(USAGE_ERR);
+	detor(cmd);
+    exit(1);
+}
+
+void detor(command_t **cmd){
+	if(((*cmd)->strRequest))
+		free(((*cmd)->strRequest));
+    if((*cmd)->text)
+		free((*cmd)->text);
+    if(((*cmd)->argu))
+		free(((*cmd)->argu));
+    free(cmd);
 }
 
 /*
@@ -315,6 +354,7 @@ int main(int argc,char *argv[]) {
     printf("The post text is %s\n", command.text);
     printf("The post text is %s\n", command.text);
     printf("The post text is %s\n", command.text);
+    printf("The request is\n %s\n", command.strRequest);
 
     int sockfd; //return file descriptor when succeed;
     //int n;
@@ -323,10 +363,9 @@ int main(int argc,char *argv[]) {
     
     struct sockaddr_in serv_addr;
     struct  hostent *server;
-    //char buffer[BUFLEN],
-    char rbuf[256];
-    char* buffer = "GET /t/ex2?add=jerusalem&tel=02-6655443&age=23 HTTP/1.0\nHost:www.ptsv2.com\r\n\r\n";
-    
+    char rbuf[1000];
+    char* buffer = command.strRequest;
+    //printf("\nBUFFER CHECK: %s", buffer);
 	//"./%e" -r 3 addr=jecrusalem tel=02-6655443 age=23 http://www.ptsv2.com/t/ex2
     if(argc < 3){
 		printf(USAGE_ERR);
@@ -370,13 +409,8 @@ int main(int argc,char *argv[]) {
 
 	
 	close(sockfd);
-	
-	
-	
-	free(command.text);
-	free(command.argu);
-    //free(command);
+	//detor(command);
+   
 
-	
     return 0;
 }
