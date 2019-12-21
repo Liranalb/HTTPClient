@@ -310,25 +310,6 @@ void detor(command_t **cmd){
     free(cmd);
 }
 
-/*
-void reqBuilder(command_t **cmd) {
-	char tmp[256];
-	if((*cmd)->post == 0)
-		strcpy(tmp, "GET ");
-	printf("\nThe temp req is %s\n", tmp);
-	strcat(tmp, (*cmd)->path);
-	printf("\nThe temp req is %s\n", tmp);
-	if(((*cmd)->argu)){
-		strcat(tmp, (*cmd)->argu);
-		free(((*cmd)->argu));
-	}
-	printf("\nThe temp req is %s\n", tmp);
-	strcat(tmp, " ");
-	strcat(tmp, PROTOCOL);
-	printf("\nThe temp req is %s\n", tmp);
-}
-* 
-* */
 
 
 
@@ -363,7 +344,7 @@ int main(int argc,char *argv[]) {
     
     struct sockaddr_in serv_addr;
     struct  hostent *server;
-    char rbuf[1000];
+    char rbuf[BUFLEN];
     char* buffer = command.strRequest;
     //printf("\nBUFFER CHECK: %s", buffer);
 	//"./%e" -r 3 addr=jecrusalem tel=02-6655443 age=23 http://www.ptsv2.com/t/ex2
@@ -377,8 +358,7 @@ int main(int argc,char *argv[]) {
     
     sockfd = socket( AF_INET, SOCK_STREAM , 0); //create an endpoint for communication
     
-    
-    
+
     if(sockfd < 0){ //checking id succeed
 		printf("error opening socket");
 		exit(0);
@@ -399,14 +379,20 @@ int main(int argc,char *argv[]) {
 	//initiate connection on a socket
 	if(connect(sockfd, (const struct sockaddr*)&serv_addr, sizeof(serv_addr)) < 0) //initiate connection on a socket
 	    perror("ERROR connecting");
-
 	
-	    rc = write(sockfd, buffer, strlen(buffer)+1);
+	rc = write(sockfd, buffer, strlen(buffer)+1);
+	
+	while(1){		 
 	    if(rc == 0)
 			exit(0);
-	    rc = read(sockfd, rbuf, 1000);
+	    rc = read(sockfd, rbuf, sizeof(rbuf));
+	    
+		
 	    printf("%s", rbuf);
-
+	    bzero(rbuf,sizeof(rbuf));
+	    if(buffer == 0)
+			break;
+	}
 	
 	close(sockfd);
 	//detor(command);
