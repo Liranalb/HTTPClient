@@ -131,20 +131,25 @@ int urlOrganizer(char *url, command_t **cmd){
         //printf("\nURL cut check: %s\n", urlTmp);
         printf("\nurlTmp: %s\n", urlTmp);
         if(urlTmp == NULL) { // define the root as a path in case no path given
-            (*cmd)->path = "/"; //check if working
+            //check if working
+            ((*cmd)->path) = (char*)malloc(sizeof(char)*2);
+            if(!(*cmd)->path)
+                return -1;
+            strcpy(((*cmd)->path), "/");
         }
         else {
             printf("\nThe path is:%s\n", urlTmp);
             strcat(urlTmp, "\0");
-            char *t = (char*)malloc(sizeof(char)*strlen(urlTmp)+1);
-            if(!t)
+            ((*cmd)->path) = (char*)malloc(sizeof(char)*strlen(urlTmp)+1);
+            if(!(*cmd)->path)
                 return -1;
-            strcat(t, "/");
-            strcat(t, urlTmp);
-            printf("\nThe tmp path is:%s\n", t);
+            strcat((*cmd)->path, "/");
+            strcat((*cmd)->path, urlTmp);
+            printf("\nThe tmp path is:%s\n", (*cmd)->path);
 
             //printf("\nThe path is:%s\n", t);
-            (*cmd)->path = t;
+
+
         }
 
         (*cmd)->port = DEFAULT_PORT;
@@ -227,11 +232,11 @@ void reqBuilder(command_t **cmd) {
         (*cmd)->strRequest = (char*)malloc(sizeof(char)*(strlen(tmp)+1));
         if(!((*cmd)->strRequest)) {
             printf("Cannot allocate initial memory for data\n");
-            //freeAlloc(cmd);
+            freeAlloc(*cmd);
             exit(1);
         }
         strcpy((*cmd)->strRequest, tmp);
-        printf("\nThe req is:%s\n", (*cmd)->strRequest);
+        //printf("\nThe req is:%s\n", (*cmd)->strRequest);
     }
 }
 
